@@ -8,12 +8,12 @@ import networkx
 
 class edgePrediction(object):
     def __init__(self):
-        #self.featuresFile = "C:/Python27_new/files/features.csv"
-        self.features = "C:/Python27_new/files/trainingFeatures.csv"
-        self.truthValues = "C:/Python27_new/files/trainingTruthValues.csv"
+        self.features = "trainingFeatures.csv"
+        self.truthValues = "trainingTruthValues.csv"
+        self.graphFile = "graph2.graphml"
+        self.graph = networkx.read_graphml(self.graphFile)
         
     def getTrainingFeatures(self):
-
         featuresFile = open(self.features, "r")
         self.features = featuresFile.read().split("\n")
         self.features.pop()
@@ -25,24 +25,12 @@ class edgePrediction(object):
         for i in range(len(self.features)):
             self.features[i] = self.features[i].split(",")
             self.truth[i] = int(self.truth[i])
-
-        #print features[0]
-            
+    
     def trainClassifier(self):
         self.getTrainingFeatures()
 
-        #self.clf = RandomForestClassifier(n_estimators = 500, oob_score = True)
-        #self.clf = RandomForestRegressor(n_estimators = 500, oob_score = True)
         self.clf = KMeans(n_clusters = 2, random_state = 0)
         self.clf.fit(self.features)
-        #print self.truth[:10]
-        #self.clf.fit(self.features, self.truth)
-        """
-        print self.clf.labels_
-        print self.clf.cluster_centers_
-        print len(self.truth)
-        print len(self.features)
-        """
         
     def predict(self):
         while(True):
@@ -50,14 +38,28 @@ class edgePrediction(object):
             if node=="done" or node=="exit":
                 break
             
-            probableConnections = self.getFeatures(node)
-            print node, probableConnections
+            probableConnections = self.finalPredictions(node)
+            toDisplay = self.returnEdgesForDisplay(node, probableConnections)
+            return toDisplay
+            
+    def pathPredictions(self, source):
+        
+        kc = networkx.shortest_path(self.graph)
+        reco = []
+        for node1 in kc:
+            for node2 in kc[node1]:
+                if source in kc[node1][node2]:
+                    for node in kc[node1][node2]:
+                        reco.append(node)
+                    
+        return list(set(reco))
+        
 
     def getFeatures(self, source):
         graph = mlTesting.getAllUsers()
         g = graph.readGraph()
-        print "graph read"
-        prunedUsers, score = graph.propagateScore(source, 30)
+        
+        prunedUsers, score = graph.propagateScore(source, 10)
         probableConnections = []
         for u in prunedUsers:
             features = graph.featureBuilding(source, u[0], score, u[1])[1:]
@@ -66,12 +68,44 @@ class edgePrediction(object):
             inFollowees = 1 if source in graph.followees and u[0] in graph.followees[source] else 0
             inFollowers = 1 if source in graph.followers and u[0] in graph.followers[source] else 0
             predictionResult = self.clf.predict(testFeatures)[0]
-            if predictionResult==1:
+            if predictionResult==1 and inFollowees!=1:
                 probableConnections.append(u[0])
 
         return probableConnections
 
+    def finalPredictions(self, source):
+        pathPrediction = self.pathPredictions(source)
+        scorePrediction = self.getFeatures(source)
+        
+        recos = set(scorePrediction).union(set(pathPrediction))
+        pageRanks = networkx.pagerank(self.graph)
+        
+        temp = sorted(recos, key = lambda x: pageRanks[x], reverse = True)
+        temp.remove(source)
+        return temp[:5]
+        
+
+    def edgeHelper(self, followees, node, depth, res):
+        if depth==0:
+            return
+        tempList = followees[node]
+        for node1 in tempList:
+            res["edges"].append((node, node1))
+            self.edgeHelper(followees, node1, depth-1, res)
+        
+    def returnEdgesForDisplay(self, source, predictions):
+        graph = mlTesting.getAllUsers()
+        g = graph.getFolloweesAndFollowers(self.graph)
+        followees = g[1]
+        edges = {}
+        edges["edges"] = []
+        edges["prediction"] = predictions
+        self.edgeHelper(followees, source, 3, edges)
+        return edges
+
+        
 if __name__ == "__main__":
     p = edgePrediction()
+    
     p.trainClassifier()
     p.predict()

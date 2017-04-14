@@ -256,11 +256,11 @@ class getAllUsers(object):
         return features
         
         
-    def testing(self):
+    def train(self):
         self.scorePropagation()
         
         
 if __name__=="__main__":
     t = getAllUsers()
     graph = t.readGraph()
-    t.testing()
+    t.train()
