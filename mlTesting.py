@@ -15,25 +15,11 @@ import random
 
 class getAllUsers(object):
     def __init__(self):
-        """
-        ACCESS_TOKEN = '1527563580-eMMTMOFV7vsbQXNSInWfPzDdZvcrxS0s6dWKlx5'
-        ACCESS_SECRET = 'GiEr7Tui5fKO7UWVJJXgUYKDyLWbWByZKAjqcIYUXxEGc'
-        CONSUMER_KEY = 'CnznZF1paZftiPwdk3NYzCyWZ'
-        CONSUMER_SECRET = 'zQHoLrOu6DiWJQDqnTjcnhRCCI1PQ3HOCLAuA3uthf0jfl5lcE'
 
-        ##for twitter
-        oauth = OAuth(ACCESS_TOKEN, ACCESS_SECRET, CONSUMER_KEY, CONSUMER_SECRET)
-        self.twitter_stream = TwitterStream(auth=oauth)
-
-        ##for tweepy
-        auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
-        auth.set_access_token(ACCESS_TOKEN, ACCESS_SECRET)
-        self.api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
-        """
-        self.userDetailsFile = "C:/Python27_new/files/users2.csv"
-        self.relationsFile = "C:/Python27_new/files/relationsNew.csv"
-        self.graphFile = "C:/Python27_new/files/graph2.graphml"
-        self.featuresFile = "C:/Python27_new/files/features.csv"
+        self.userDetailsFile = "users2.csv"
+        self.relationsFile = "relationsNew.csv"
+        self.graphFile = "graph2.graphml"
+        self.featuresFile = "features.csv"
         
     def readGraph(self):
         self.readingUsersFile()
