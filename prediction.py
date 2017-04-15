@@ -5,6 +5,8 @@ from sklearn.externals import joblib
 from sklearn.linear_model import LogisticRegression
 import mlTesting
 import networkx
+import graphDisplay
+from random import shuffle
 
 class edgePrediction(object):
     def __init__(self):
@@ -40,7 +42,10 @@ class edgePrediction(object):
             
             probableConnections = self.finalPredictions(node)
             toDisplay = self.returnEdgesForDisplay(node, probableConnections)
-            return toDisplay
+            print toDisplay['prediction']
+            display = graphDisplay.showRecommendations()
+            display.showGraph(node, toDisplay['edges'], toDisplay['prediction'])
+            
             
     def pathPredictions(self, source):
         
@@ -64,7 +69,7 @@ class edgePrediction(object):
         for u in prunedUsers:
             features = graph.featureBuilding(source, u[0], score, u[1])[1:]
             testFeatures = [features]
-            #print testFeatures
+
             inFollowees = 1 if source in graph.followees and u[0] in graph.followees[source] else 0
             inFollowers = 1 if source in graph.followers and u[0] in graph.followers[source] else 0
             predictionResult = self.clf.predict(testFeatures)[0]
@@ -80,32 +85,36 @@ class edgePrediction(object):
         recos = set(scorePrediction).union(set(pathPrediction))
         pageRanks = networkx.pagerank(self.graph)
         
-        temp = sorted(recos, key = lambda x: pageRanks[x], reverse = True)
-        temp.remove(source)
+        temp = sorted(recos, key = lambda x: pageRanks[x], reverse = True)[:20]
+        if source in temp:
+            temp.remove(source)
+        shuffle(temp)
         return temp[:5]
         
 
-    def edgeHelper(self, followees, node, depth, res):
-        if depth==0:
+    def edgeHelper(self, followees, node, depth, res, covered):
+        if depth==0 or node in covered:
             return
-        tempList = followees[node]
+        tempList = followees[node] if node in followees else []
+        covered.append(node)
         for node1 in tempList:
             res["edges"].append((node, node1))
-            self.edgeHelper(followees, node1, depth-1, res)
+            self.edgeHelper(followees, node1, depth-1, res, covered)
         
     def returnEdgesForDisplay(self, source, predictions):
         graph = mlTesting.getAllUsers()
         g = graph.getFolloweesAndFollowers(self.graph)
-        followees = g[1]
+        followees = g[0]
         edges = {}
         edges["edges"] = []
         edges["prediction"] = predictions
-        self.edgeHelper(followees, source, 3, edges)
+        covered = []
+        
+        self.edgeHelper(followees, source, 2, edges, covered)
         return edges
 
         
 if __name__ == "__main__":
     p = edgePrediction()
-    
     p.trainClassifier()
     p.predict()
